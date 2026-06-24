@@ -246,6 +246,8 @@ function getHDNTData() {
     bMST:      v('nt-b-mst')       || '[MST]',
     bDiaChi:   v('nt-b-diachi')    || '[ĐỊA CHỈ]',
     bDT:       v('nt-b-dt')        || '[ĐIỆN THOẠI]',
+    bSTK:      v('nt-b-stk')       || '[SỐ TÀI KHOẢN]',
+    bNganHang: v('nt-b-nganhang')  || '[NGÂN HÀNG]',
     bDaiDien:  v('nt-b-daidien')   || '[HỌ TÊN]',
     bChucVu:   v('nt-b-chucvu')    || '[CHỨC VỤ]',
     baoBi:     v('nt-bao-bi')      || '[QUY CÁCH ĐÓNG GÓI]',
@@ -311,14 +313,16 @@ function buildHDNTPreview(d) {
     '<p class="doc-subtitle"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>Độc lập – Tự do – Hạnh phúc</p>' +
     '<p><em>Hôm nay, <strong>' + ph(d.ngayKy) + '</strong>, tại Thành Phố Hồ Chí Minh chúng tôi gồm:</em></p><br>' +
     '<p><strong>BÊN BÁN: CÔNG TY TNHH SƠN HẢI VÂN</strong></p>' +
-    '<p>- Địa chỉ: 45/5 Phạm Viết Chánh, P. Nguyễn Cư Trinh, Quận 1, TP. HCM.</p>' +
-    '<p>- Điện thoại: 028.6262.4100 &nbsp;&nbsp; Fax: 028.6262.4011</p>' +
+    '<p>- Địa chỉ: 45/5 Phạm Viết Chánh, Phường Cầu Ông Lãnh, TP Hồ Chí Minh, Việt Nam</p>' +
+    '<p>- Hotline: 0703220606 &nbsp;&nbsp;&nbsp;&nbsp; Email: info@sonhaivan.com</p>' +
     '<p>- Mã số thuế: 0306051611</p>' +
     '<p>- Số tài khoản: 31010000664973 – NH Đầu tư & Phát triển VN – CN TP HCM</p>' +
     '<p>- Đại diện: Ông <strong>NGUYỄN HỮU KHÁNH</strong> &nbsp;&nbsp; Chức vụ: <strong>Giám đốc</strong></p><br>' +
     '<p><strong>BÊN MUA: ' + ph(d.bTen) + '</strong></p>' +
     '<p>- Địa chỉ: ' + ph(d.bDiaChi) + '</p>' +
     '<p>- Điện thoại: ' + ph(d.bDT) + '</p>' +
+    '<p>- Số tài khoản: ' + ph(d.bSTK) + '</p>' +
+    '<p>- Ngân hàng: ' + ph(d.bNganHang) + '</p>' +
     '<p>- Mã số thuế: ' + ph(d.bMST) + '</p>' +
     '<p>- Đại diện: Ông ' + ph(d.bDaiDien) + ' &nbsp;&nbsp; Chức vụ: <strong>' + ph(d.bChucVu) + '</strong></p><br>' +
     '<p class="clause-title">ĐIỀU 1: HÀNG HÓA, SỐ LƯỢNG, GIÁ CẢ</p>' +
@@ -365,8 +369,8 @@ function buildHDMBPreview(d) {
     '<p class="doc-subtitle"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>Độc lập – Tự do – Hạnh phúc</p>' +
     '<p><em>Hôm nay, <strong>' + ph(d.ngayKy) + '</strong>, tại thành phố Hồ Chí Minh chúng tôi gồm:</em></p><br>' +
     '<p><strong>Bên Bán (bên A): CÔNG TY TNHH SƠN HẢI VÂN</strong></p>' +
-    '<p>- Địa chỉ: 45/5 Phạm Viết Chánh, P. Nguyễn Cư Trinh, Quận 1, Tp.HCM</p>' +
-    '<p>- Điện thoại: 028.6262.4100 &nbsp;&nbsp; Fax: 028.6262.4011</p>' +
+    '<p>- Địa chỉ: 45/5 Phạm Viết Chánh, Phường Cầu Ông Lãnh, TP Hồ Chí Minh, Việt Nam</p>' +
+    '<p>- Hotline: 0703220606 &nbsp;&nbsp;&nbsp;&nbsp; Email: info@sonhaivan.com</p>' +
     '<p>- Số tài khoản: 3100 664 973 – NH Đầu tư & Phát triển Việt Nam – CN Tp. HCM.</p>' +
     '<p>- Mã số thuế: 0306051611</p>' +
     '<p>- Đại diện: Ông <strong>Nguyễn Hữu Khánh</strong> &nbsp;&nbsp; Chức vụ: <strong>Giám đốc</strong></p><br>' +
@@ -488,6 +492,67 @@ function runText(run) {
     if (node.localName === 'br') pieces.push('\n');
   });
   return pieces.join('');
+}
+
+function paragraphText(paragraph) {
+  var runs = paragraph.getElementsByTagNameNS(WORD_NS, 'r');
+  return Array.prototype.map.call(runs, runText).join('');
+}
+
+function setParagraphText(doc, paragraph, value) {
+  var runs = paragraph.getElementsByTagNameNS(WORD_NS, 'r');
+  if (!runs.length) {
+    var run = doc.createElementNS(WORD_NS, 'w:r');
+    paragraph.appendChild(run);
+    runs = [run];
+  }
+
+  setRunText(doc, runs[0], value);
+  clearYellowFromRun(runs[0]);
+  for (var i = 1; i < runs.length; i++) {
+    setRunText(doc, runs[i], '');
+    clearYellowFromRun(runs[i]);
+  }
+}
+
+function insertParagraphAfter(doc, paragraph, value) {
+  var clone = paragraph.cloneNode(true);
+  setParagraphText(doc, clone, value);
+  if (paragraph.nextSibling) paragraph.parentNode.insertBefore(clone, paragraph.nextSibling);
+  else paragraph.parentNode.appendChild(clone);
+  return clone;
+}
+
+function replaceSellerStaticInfo(doc) {
+  var sellerAddress = '45/5 Phạm Viết Chánh, Phường Cầu Ông Lãnh, TP Hồ Chí Minh, Việt Nam';
+  var sellerContact = 'Hotline: 0703220606\t\t\tEmail: info@sonhaivan.com';
+  var paragraphs = doc.getElementsByTagNameNS(WORD_NS, 'p');
+
+  Array.prototype.forEach.call(paragraphs, function(paragraph) {
+    var text = paragraphText(paragraph);
+    var key = normalizeKey(text);
+    if (key.indexOf('dia chi') !== -1 && key.indexOf('pham viet chanh') !== -1) {
+      var prefix = key.indexOf('-') === 0 ? '-\tĐịa chỉ\t: ' : 'Địa chỉ\t: ';
+      setParagraphText(doc, paragraph, prefix + sellerAddress);
+      return;
+    }
+
+    if (key.indexOf('dien thoai') !== -1 && key.indexOf('028.6262.4100') !== -1) {
+      setParagraphText(doc, paragraph, (key.indexOf('-') === 0 ? '- ' : '') + sellerContact);
+    }
+  });
+}
+
+function insertHDNTBuyerBankInfo(doc, d) {
+  var paragraphs = doc.getElementsByTagNameNS(WORD_NS, 'p');
+  for (var i = 0; i < paragraphs.length; i++) {
+    var key = normalizeKey(paragraphText(paragraphs[i]));
+    if (key.indexOf('dien thoai') === 0 && key.indexOf('028.6262.4100') === -1) {
+      var account = insertParagraphAfter(doc, paragraphs[i], 'Số tài khoản\t: ' + d.bSTK);
+      insertParagraphAfter(doc, account, 'Ngân hàng\t: ' + d.bNganHang);
+      return;
+    }
+  }
 }
 
 function rPrHasYellow(rPr) {
@@ -838,9 +903,12 @@ async function buildDocx(type) {
     throw new Error('Không đọc được cấu trúc XML của file mẫu Word.');
   }
 
+  replaceSellerStaticInfo(doc);
+
   if (type === 'hdnt') {
     var nt = getHDNTData();
     replaceHighlightedSpans(doc, replacementForHDNT(nt));
+    insertHDNTBuyerBankInfo(doc, nt);
   } else {
     var mb = getHDMBData();
     replaceHighlightedSpans(doc, replacementForHDMB(mb));
